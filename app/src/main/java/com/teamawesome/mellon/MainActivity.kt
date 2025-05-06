@@ -1,47 +1,45 @@
+// MainActivity.kt
 package com.teamawesome.mellon
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.*
+import com.teamawesome.mellon.network.AuthService
+import com.teamawesome.mellon.repository.AuthRepository
+import com.teamawesome.mellon.ui.LoginScreen
+import com.teamawesome.mellon.ui.SuccessScreen
 import com.teamawesome.mellon.ui.theme.MellonTheme
+import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
+import okhttp3.OkHttpClient
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        val client = OkHttpClient.Builder().build()
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8080/")
+            .client(client)
+            .addConverterFactory(JacksonConverterFactory.create())
+            .build()
+
+        val authService    = retrofit.create(AuthService::class.java)
+        val authRepository = AuthRepository(authService)
+
         setContent {
             MellonTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                var successMessage by remember { mutableStateOf<String?>(null) }
+
+                if (successMessage == null) {
+                    LoginScreen(authRepository) { msg ->
+                        successMessage = msg
+                    }
+                } else {
+                    SuccessScreen(successMessage!!)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MellonTheme {
-        Greeting("Android")
     }
 }
